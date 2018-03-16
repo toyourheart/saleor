@@ -47,9 +47,10 @@ def get_product_images(product):
     return list(product.images.all())
 
 
-def products_with_availability(products, discounts, local_currency):
+def products_with_availability(products, discounts, local_currency, taxes):
     for product in products:
-        yield product, get_availability(product, discounts, local_currency)
+        yield (product, get_availability(
+            product, discounts, local_currency, taxes))
 
 
 ProductAvailability = namedtuple(
@@ -58,10 +59,10 @@ ProductAvailability = namedtuple(
         'discount', 'price_range_local_currency', 'discount_local_currency'))
 
 
-def get_availability(product, discounts=None, local_currency=None):
+def get_availability(product, discounts=None, local_currency=None, taxes=None):
     # In default currency
-    price_range = product.get_price_range(discounts=discounts)
-    undiscounted = product.get_price_range()
+    price_range = product.get_price_range(discounts=discounts, taxes=taxes)
+    undiscounted = product.get_price_range(taxes=taxes)
     if undiscounted.start > price_range.start:
         discount = undiscounted.start - price_range.start
     else:
@@ -115,8 +116,9 @@ def products_for_cart(user):
     return products
 
 
-def get_variant_picker_data(product, discounts=None, local_currency=None):
-    availability = get_availability(product, discounts, local_currency)
+def get_variant_picker_data(
+        product, discounts=None, local_currency=None, taxes=None):
+    availability = get_availability(product, discounts, local_currency, taxes)
     variants = product.variants.all()
     data = {'variantAttributes': [], 'variants': []}
 
@@ -126,8 +128,8 @@ def get_variant_picker_data(product, discounts=None, local_currency=None):
     filter_available_variants = defaultdict(list)
 
     for variant in variants:
-        price = variant.get_price_per_item(discounts)
-        price_undiscounted = variant.get_price_per_item()
+        price = variant.get_price_per_item(discounts, taxes)
+        price_undiscounted = variant.get_price_per_item(taxes=taxes)
         if local_currency:
             price_local_currency = to_local_currency(price, local_currency)
         else:
@@ -361,7 +363,8 @@ def get_product_list_context(request, filter_set):
     products_paginated = get_paginator_items(
         filter_set.qs, settings.PAGINATE_BY, request.GET.get('page'))
     products_and_availability = list(products_with_availability(
-        products_paginated, request.discounts, request.currency))
+        products_paginated, request.discounts, request.currency,
+        request.taxes))
     now_sorted_by = get_now_sorted_by(filter_set)
     arg_sort_by = request.GET.get('sort_by')
     is_descending = arg_sort_by.startswith('-') if arg_sort_by else False
