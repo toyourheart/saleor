@@ -233,7 +233,7 @@ AUTH_USER_MODEL = 'account.User'
 
 LOGIN_URL = '/account/login/'
 
-DEFAULT_COUNTRY = 'PL' # fixme: revert back to USD before merge
+DEFAULT_COUNTRY = 'PL'  # fixme: revert back to USD before merge
 DEFAULT_CURRENCY = 'USD'
 AVAILABLE_CURRENCIES = [DEFAULT_CURRENCY]
 
