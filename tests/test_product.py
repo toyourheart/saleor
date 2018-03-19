@@ -96,10 +96,11 @@ def test_product_preview(admin_client, client, product_in_stock):
     assert response.status_code == 200
 
 
-def test_availability(product_in_stock, monkeypatch, settings):
+def test_availability(product_in_stock, monkeypatch, settings, taxes):
     availability = get_availability(product_in_stock)
     assert availability.price_range == product_in_stock.get_price_range()
     assert availability.price_range_local_currency is None
+
     monkeypatch.setattr(
         'django_prices_openexchangerates.models.get_rates',
         lambda c: {'PLN': Mock(rate=2)})
@@ -107,6 +108,13 @@ def test_availability(product_in_stock, monkeypatch, settings):
     settings.OPENEXCHANGERATES_API_KEY = 'fake-key'
     availability = get_availability(product_in_stock, local_currency='PLN')
     assert availability.price_range_local_currency.start.currency == 'PLN'
+    assert availability.available
+
+    availability = get_availability(product_in_stock, taxes=taxes)
+    assert availability.price_range.start.tax.amount
+    assert availability.price_range.stop.tax.amount
+    assert availability.price_range_undiscounted.start.tax.amount
+    assert availability.price_range_undiscounted.stop.tax.amount
     assert availability.available
 
 
