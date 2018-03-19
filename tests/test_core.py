@@ -2,12 +2,12 @@ from unittest.mock import Mock
 
 import pytest
 from django.shortcuts import reverse
-from prices import Money
+from prices import Money, MoneyRange, TaxedMoney, TaxedMoneyRange
 
 from saleor.account.models import Address, User
 from saleor.core.utils import (
-    Country, create_superuser, format_money, get_country_by_ip,
-    get_currency_for_country, random_data)
+    Country, apply_tax_to_price, create_superuser, format_money,
+    get_country_by_ip, get_currency_for_country, random_data)
 from saleor.discount.models import Sale, Voucher
 from saleor.order.models import Order
 from saleor.product.models import Product
@@ -23,6 +23,78 @@ type_schema = {
             'GMO': ['Yes', 'No']},
         'images_dir': 'candy/',
         'is_shipping_required': True}}
+
+
+def test_apply_tax_to_price_include_tax(taxes):
+    money = Money(100, 'USD')
+    assert apply_tax_to_price(taxes, 'standard', money) == TaxedMoney(
+        net=Money(100, 'USD'), gross=Money(123, 'USD'))
+    assert apply_tax_to_price(taxes, 'medical', money) == TaxedMoney(
+        net=Money(100, 'USD'), gross=Money(108, 'USD'))
+
+    taxed_money = TaxedMoney(net=Money(100, 'USD'), gross=Money(100, 'USD'))
+    assert apply_tax_to_price(taxes, 'standard', taxed_money) == TaxedMoney(
+        net=Money(100, 'USD'), gross=Money(123, 'USD'))
+    assert apply_tax_to_price(taxes, 'medical', taxed_money) == TaxedMoney(
+        net=Money(100, 'USD'), gross=Money(108, 'USD'))
+
+
+def test_apply_tax_to_price_include_tax_fallback_to_standard_rate(taxes):
+    money = Money(100, 'USD')
+    taxed_money = TaxedMoney(net=Money(100, 'USD'), gross=Money(123, 'USD'))
+    assert apply_tax_to_price(taxes, 'space suits', money) == taxed_money
+
+
+def test_apply_tax_to_price_add_tax(settings, taxes):
+    settings.INCLUDE_TAXES_IN_PRICES = False
+
+    money = Money(100, 'USD')
+    assert apply_tax_to_price(taxes, 'standard', money) == TaxedMoney(
+        net=Money('81.30', 'USD'), gross=Money(100, 'USD'))
+    assert apply_tax_to_price(taxes, 'medical', money) == TaxedMoney(
+        net=Money('92.59', 'USD'), gross=Money(100, 'USD'))
+
+
+def test_apply_tax_to_price_add_tax_fallback_to_standard_rate(
+        settings, taxes):
+    settings.INCLUDE_TAXES_IN_PRICES = False
+    money = Money(100, 'USD')
+    assert apply_tax_to_price(taxes, 'space suits', money) == TaxedMoney(
+        net=Money('81.30', 'USD'), gross=Money(100, 'USD'))
+
+    taxed_money = TaxedMoney(net=Money(100, 'USD'), gross=Money(100, 'USD'))
+    assert apply_tax_to_price(taxes, 'space suits', taxed_money) == TaxedMoney(
+        net=Money('81.30', 'USD'), gross=Money(100, 'USD'))
+
+
+def test_apply_tax_to_price_raise_typeerror_for_invalid_type(taxes):
+    with pytest.raises(TypeError):
+        assert apply_tax_to_price(taxes, 'standard', 100)
+
+
+def test_apply_tax_to_price_no_taxes_return_taxed_money():
+    money = Money(100, 'USD')
+    taxed_money = TaxedMoney(net=Money(100, 'USD'), gross=Money(100, 'USD'))
+
+    assert apply_tax_to_price(None, 'standard', money) == taxed_money
+    assert apply_tax_to_price(None, 'medical', taxed_money) == taxed_money
+
+
+def test_apply_tax_to_price_no_taxes_return_taxed_money_range():
+    money_range = MoneyRange(Money(100, 'USD'), Money(200, 'USD'))
+    taxed_money_range = TaxedMoneyRange(
+        TaxedMoney(net=Money(100, 'USD'), gross=Money(100, 'USD')),
+        TaxedMoney(net=Money(200, 'USD'), gross=Money(200, 'USD')))
+
+    assert (apply_tax_to_price(
+        None, 'standard', money_range) == taxed_money_range)
+    assert (apply_tax_to_price(
+        None, 'standard', taxed_money_range) == taxed_money_range)
+
+
+def test_apply_tax_to_price_no_taxes_raise_typeerror_for_invalid_type():
+    with pytest.raises(TypeError):
+        assert apply_tax_to_price(None, 'standard', 100)
 
 
 def test_format_money():
