@@ -101,6 +101,7 @@ class Cart(models.Model):
 
     def __init__(self, *args, **kwargs):
         self.discounts = kwargs.pop('discounts', None)
+        self.taxes = kwargs.pop('taxes', None)
         super().__init__(*args, **kwargs)
 
     def update_quantity(self):
@@ -142,9 +143,10 @@ class Cart(models.Model):
     def __len__(self):
         return self.lines.count()
 
-    def get_total(self, discounts=None):
+    def get_total(self, discounts=None, taxes=None):
         """Return the total cost of the cart prior to shipping."""
-        subtotals = [line.get_total(discounts) for line in self.lines.all()]
+        subtotals = [
+            line.get_total(discounts, taxes) for line in self.lines.all()]
         if not subtotals:
             raise AttributeError('Calling get_total() on an empty cart')
         return sum_prices(subtotals)
@@ -263,15 +265,16 @@ class CartLine(models.Model):
     def __setstate__(self, data):
         self.variant, self.quantity, self.data = data
 
-    def get_total(self, discounts=None):
+    def get_total(self, discounts=None, taxes=None):
         """Return the total price of this line."""
-        amount = self.get_price_per_item(discounts) * self.quantity
+        amount = self.get_price_per_item(discounts, taxes) * self.quantity
         return amount.quantize(CENTS)
 
     # pylint: disable=W0221
-    def get_price_per_item(self, discounts=None):
+    def get_price_per_item(self, discounts=None, taxes=None):
         """Return the unit price of the line."""
-        return self.variant.get_price_per_item(discounts=discounts)
+        return self.variant.get_price_per_item(
+            discounts=discounts, taxes=taxes)
 
     def is_shipping_required(self):
         """Return `True` if the related product variant requires shipping."""
