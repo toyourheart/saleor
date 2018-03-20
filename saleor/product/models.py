@@ -197,7 +197,7 @@ class ProductVariant(models.Model):
         app_label = 'product'
 
     def __str__(self):
-        return self.name or self.display_variant_attributes()
+        return self.name or self.display_variant_attributes() or self.sku
 
     def check_quantity(self, quantity):
         total_available_quantity = self.get_stock_quantity()
