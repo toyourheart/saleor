@@ -63,6 +63,7 @@ def request_cart(cart, monkeypatch):
         utils, 'get_cart_from_request',
         lambda request, cart_queryset=None: cart)
     cart.discounts = Sale.objects.all()
+    cart.taxes = None
     return cart
 
 
@@ -689,6 +690,6 @@ def taxes(tax_rates):
 
 @pytest.fixture
 def vatlayer(db, settings, tax_rates, taxes):
-    settings.VATLAYER_ACCESS_KEY = 'testvatlayer'
+    settings.VATLAYER_ACCESS_KEY = 'enablevatlayer'
     VAT.objects.create(country_code=settings.DEFAULT_COUNTRY, data=tax_rates)
     return taxes

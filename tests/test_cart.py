@@ -518,6 +518,7 @@ def test_view_cart(client, sale, product_in_stock, request_cart):
     response = client.get('/cart/')
     response_cart_line = response.context[0]['cart_lines'][0]
     cart_line = request_cart.lines.first()
+    assert not response_cart_line['get_total'].tax.amount
     assert not response_cart_line['get_total'] == cart_line.get_total()
     assert response.status_code == 200
 
@@ -530,7 +531,8 @@ def test_view_cart_with_taxes(
     response_cart_line = response.context[0]['cart_lines'][0]
     cart_line = request_cart.lines.first()
     assert response_cart_line['get_total'].tax.amount
-    assert not response_cart_line['get_total'] == cart_line.get_total()
+    assert not response_cart_line['get_total'] == cart_line.get_total(
+        taxes=vatlayer)
     assert response.status_code == 200
 
 
