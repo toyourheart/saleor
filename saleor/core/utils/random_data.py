@@ -24,12 +24,11 @@ from ...order.utils import update_order_status
 from ...page.models import Page
 from ...product.models import (
     AttributeChoiceValue, Category, Collection, Product, ProductAttribute,
-    ProductImage, ProductType, ProductVariant, Stock, StockLocation)
+    ProductImage, ProductType, ProductVariant)
 from ...product.thumbnails import create_product_thumbnails
 from ...shipping.models import ANY_COUNTRY, ShippingMethod
 
 fake = Factory.create()
-STOCK_LOCATION = 'default'
 
 DELIVERY_REGIONS = [ANY_COUNTRY, 'US', 'PL', 'DE', 'GB']
 PRODUCTS_LIST_DIR = 'products-list/'
@@ -304,23 +303,13 @@ def create_product(**kwargs):
     return Product.objects.create(**defaults)
 
 
-def create_stock(variant, **kwargs):
-    default_location = StockLocation.objects.get_or_create(
-        name=STOCK_LOCATION)[0]
-    defaults = {
-        'variant': variant,
-        'location': default_location,
-        'quantity': fake.random_int(1, 50)}
-    defaults.update(kwargs)
-    return Stock.objects.create(**defaults)
-
-
 def create_variant(product, **kwargs):
     defaults = {
-        'product': product}
+        'product': product,
+        'quantity': fake.random_int(1, 50),
+        'cost_price': fake.money()}
     defaults.update(kwargs)
     variant = ProductVariant.objects.create(**defaults)
-    create_stock(variant)
     return variant
 
 

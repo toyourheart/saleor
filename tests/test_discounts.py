@@ -29,32 +29,32 @@ def test_valid_voucher_limit(settings, limit, value):
 
 @pytest.mark.integration
 @pytest.mark.django_db(transaction=True)
-def test_variant_discounts(product_in_stock):
-    variant = product_in_stock.variants.get()
+def test_variant_discounts(product):
+    variant = product.variants.get()
     low_discount = Sale.objects.create(
         type=DiscountValueType.FIXED,
         value=5)
-    low_discount.products.add(product_in_stock)
+    low_discount.products.add(product)
     discount = Sale.objects.create(
         type=DiscountValueType.FIXED,
         value=8)
-    discount.products.add(product_in_stock)
+    discount.products.add(product)
     high_discount = Sale.objects.create(
         type=DiscountValueType.FIXED,
         value=50)
-    high_discount.products.add(product_in_stock)
+    high_discount.products.add(product)
     final_price = variant.get_price_per_item(discounts=Sale.objects.all())
     assert final_price.gross == Money(0, 'USD')
 
 
 @pytest.mark.integration
 @pytest.mark.django_db(transaction=True)
-def test_percentage_discounts(product_in_stock):
-    variant = product_in_stock.variants.get()
+def test_percentage_discounts(product):
+    variant = product.variants.get()
     discount = Sale.objects.create(
         type=DiscountValueType.PERCENTAGE,
         value=50)
-    discount.products.add(product_in_stock)
+    discount.products.add(product)
     final_price = variant.get_price_per_item(discounts=[discount])
     assert final_price.gross == Money(5, 'USD')
 

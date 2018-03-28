@@ -17,7 +17,7 @@ from ...order.utils import (
     add_variant_to_order, cancel_fulfillment, cancel_order,
     change_order_line_quantity, merge_duplicates_into_order_line,
     recalculate_order)
-from ...product.models import Product, ProductVariant, Stock
+from ...product.models import Product, ProductVariant
 from ...product.utils import allocate_stock, deallocate_stock
 from ..forms import AjaxSelect2ChoiceField
 from ..widgets import PhonePrefixWidget
