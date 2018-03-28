@@ -26,7 +26,7 @@ from saleor.order.utils import recalculate_order
 from saleor.page.models import Page
 from saleor.product.models import (
     AttributeChoiceValue, Category, Collection, Product, ProductAttribute,
-    ProductImage, ProductType, ProductVariant, Stock)
+    ProductImage, ProductType, ProductVariant)
 from saleor.shipping.models import ShippingMethod
 from saleor.site.models import AuthorizationKey, SiteSettings
 
@@ -415,9 +415,8 @@ def order_with_lines_and_stock(order, product_type, default_category):
     product = Product.objects.create(
         name='Test product', price=Money('10.00', 'USD'),
         product_type=product_type, category=default_category)
-    variant = ProductVariant.objects.create(product=product, sku='SKU_A')
-    stock = Stock.objects.create(
-        variant=variant, cost_price=Money(1, 'USD'), quantity=5,
+    variant = ProductVariant.objects.create(
+        product=product, sku='SKU_A', cost_price=Money(1, 'USD'), quantity=5,
         quantity_allocated=3)
     order.lines.create(
         order=order,
@@ -428,13 +427,12 @@ def order_with_lines_and_stock(order, product_type, default_category):
         quantity=3,
         unit_price_net=Decimal('30.00'),
         unit_price_gross=Decimal('30.00'),
-        stock=stock)
+        variant=variant)
     product = Product.objects.create(
         name='Test product 2', price=Money('20.00', 'USD'),
         product_type=product_type, category=default_category)
-    variant = ProductVariant.objects.create(product=product, sku='SKU_B')
-    stock = Stock.objects.create(
-        variant=variant, cost_price=Money(2, 'USD'), quantity=2,
+    variant = ProductVariant.objects.create(
+        product=product, sku='SKU_B', cost_price=Money(2, 'USD'), quantity=2,
         quantity_allocated=2)
     order.lines.create(
         order=order,
@@ -445,7 +443,7 @@ def order_with_lines_and_stock(order, product_type, default_category):
         quantity=2,
         unit_price_net=Decimal('20.00'),
         unit_price_gross=Decimal('20.00'),
-        stock=stock)
+        variant=variant)
     recalculate_order(order)
     order.refresh_from_db()
     return order
@@ -464,29 +462,6 @@ def fulfilled_order(order_with_lines_and_stock):
     order.status = OrderStatus.FULFILLED
     order.save(update_fields=['status'])
     return order
-
-
-@pytest.fixture()
-def order_with_variant_from_different_stocks(order_with_lines_and_stock):
-    line = OrderLine.objects.get(product_sku='SKU_A')
-    variant = ProductVariant.objects.get(sku=line.product_sku)
-    stock = Stock.objects.create(
-        variant=variant, cost_price=Money(1, 'USD'), quantity=5,
-        quantity_allocated=2)
-    order_with_lines_and_stock.lines.create(
-        order=order,
-        product=variant.product,
-        product_name=variant.product.name,
-        product_sku=line.product_sku,
-        is_shipping_required=variant.product.product_type.is_shipping_required,
-        quantity=2,
-        unit_price_net=Decimal('30.00'),
-        unit_price_gross=Decimal('30.00'),
-        stock=stock)
-    Stock.objects.create(
-        variant=variant, cost_price=Money(1, 'USD'), quantity=5,
-        quantity_allocated=0)
-    return order_with_lines_and_stock
 
 
 @pytest.fixture()

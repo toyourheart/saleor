@@ -28,9 +28,8 @@ def products_visible_to_user(user):
 def products_with_details(user):
     products = products_visible_to_user(user)
     products = products.prefetch_related(
-        'category', 'images', 'variants__stock',
-        'variants__variant_images__image', 'attributes__values',
-        'product_type__variant_attributes__values',
+        'category', 'images', 'variants__variant_images__image',
+        'attributes__values', 'product_type__variant_attributes__values',
         'product_type__product_attributes__values')
     return products
 
@@ -228,8 +227,6 @@ def get_attributes_display_map(obj, attributes):
 
 
 def get_product_availability_status(product):
-    from .models import Stock
-
     is_available = product.is_available()
     are_all_variants_in_stock = all(
         variant.is_in_stock() for variant in product.variants.all())
@@ -307,14 +304,15 @@ def get_variant_costs_data(variant):
     return CostsData(costs, margins)
 
 
-def get_cost_price(stock):
-    if not stock.cost_price:
+def get_cost_price(variant):
+    if not variant.cost_price:
         return ZERO_TAXED_MONEY
-    return stock.get_total()
+    return variant.get_total()
 
 
-def get_margin_for_variant(stock):
-    stock_price = stock.get_total()
+def get_margin_for_variant(variant):
+    # TODO
+    stock_price = variant.get_total()
     if stock_price is None:
         return None
     price = stock.variant.get_price_per_item()
@@ -323,25 +321,25 @@ def get_margin_for_variant(stock):
     return percent
 
 
-def allocate_stock(stock, quantity):
-    stock.quantity_allocated = F('quantity_allocated') + quantity
-    stock.save(update_fields=['quantity_allocated'])
+def allocate_stock(variant, quantity):
+    variant.quantity_allocated = F('quantity_allocated') + quantity
+    variant.save(update_fields=['quantity_allocated'])
 
 
-def deallocate_stock(stock, quantity):
-    stock.quantity_allocated = F('quantity_allocated') - quantity
-    stock.save(update_fields=['quantity_allocated'])
+def deallocate_stock(variant, quantity):
+    variant.quantity_allocated = F('quantity_allocated') - quantity
+    variant.save(update_fields=['quantity_allocated'])
 
 
-def decrease_stock(stock, quantity):
-    stock.quantity = F('quantity') - quantity
-    stock.quantity_allocated = F('quantity_allocated') - quantity
-    stock.save(update_fields=['quantity', 'quantity_allocated'])
+def decrease_stock(variant, quantity):
+    variant.quantity = F('quantity') - quantity
+    variant.quantity_allocated = F('quantity_allocated') - quantity
+    variant.save(update_fields=['quantity', 'quantity_allocated'])
 
 
-def increase_stock(stock, quantity):
-    stock.quantity = F('quantity') + quantity
-    stock.save(update_fields=['quantity'])
+def increase_stock(variant, quantity):
+    variant.quantity = F('quantity') + quantity
+    variant.save(update_fields=['quantity'])
 
 
 def get_product_list_context(request, filter_set):

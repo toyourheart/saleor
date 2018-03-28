@@ -33,52 +33,23 @@ def product_with_no_attributes(product_type, default_category):
     return product
 
 
-def test_stock_selector(product):
-    variant = product.variants.get()
-    preferred_stock = variant.select_stockrecord(5)
-    assert preferred_stock.quantity_available >= 5
-
-
-def test_allocate_stock(product):
-    variant = product.variants.get()
-    stock = variant.select_stockrecord(5)
-    assert stock.quantity_allocated == 0
-    allocate_stock(stock, 1)
-    stock.refresh_from_db()
-    assert stock.quantity_allocated == 1
-
-
-def test_deallocate_stock(product):
-    stock = product.variants.first().stock.first()
-    stock.quantity = 100
-    stock.quantity_allocated = 80
-    stock.save()
-    deallocate_stock(stock, 50)
-    stock.refresh_from_db()
-    assert stock.quantity == 100
-    assert stock.quantity_allocated == 30
-
-
-def test_decrease_stock(product):
-    stock = product.variants.first().stock.first()
-    stock.quantity = 100
-    stock.quantity_allocated = 80
-    stock.save()
-    decrease_stock(stock, 50)
-    stock.refresh_from_db()
-    assert stock.quantity == 50
-    assert stock.quantity_allocated == 30
-
-
-def test_increase_stock(product):
-    stock = product.variants.first().stock.first()
-    stock.quantity = 100
-    stock.quantity_allocated = 80
-    stock.save()
-    increase_stock(stock, 50)
-    stock.refresh_from_db()
-    assert stock.quantity == 150
-    assert stock.quantity_allocated == 80
+@pytest.mark.parametrize(
+    'func, expected_quanitty, expected_quant_allocated',
+    (
+        (increase_stock, 150, 80),
+        (decrease_stock, 50, 30),
+        (deallocate_stock, 100, 30),
+        (allocate_stock, 10, 1)))
+def test_stock_utils(
+        product, func, expected_quanitty, expected_quant_allocated):
+    variant = product.variants.first()
+    variant.quantity = 100
+    variant.quantity_allocated = 80
+    variant.save()
+    func(variant, 50)
+    variant.refresh_from_db()
+    assert variant.quantity == expected_quanitty
+    assert variant.quantity_allocated == expected_quant_allocated
 
 
 def test_product_page_redirects_to_correct_slug(client, product):
@@ -359,20 +330,22 @@ def test_product_availability_status(unavailable_product):
     variant_2 = product.variants.create(sku='test-2')
 
     # create empty stock records
-    stock_1 = variant_1.stock.create(quantity=0)
-    stock_2 = variant_2.stock.create(quantity=0)
+    variant_1.quantity = 0
+    variant_2.quantity = 0
+    variant_1.save()
+    variant_2.save()
     status = get_product_availability_status(product)
     assert status == ProductAvailabilityStatus.OUT_OF_STOCK
 
     # assign quantity to only one stock record
-    stock_1.quantity = 5
-    stock_1.save()
+    variant_1.quantity = 5
+    variant_1.save()
     status = get_product_availability_status(product)
     assert status == ProductAvailabilityStatus.LOW_STOCK
 
     # both stock records have some quantity
-    stock_2.quantity = 5
-    stock_2.save()
+    variant_2.quantity = 5
+    variant_2.save()
     status = get_product_availability_status(product)
     assert status == ProductAvailabilityStatus.READY_FOR_PURCHASE
 
@@ -388,12 +361,13 @@ def test_variant_availability_status(unavailable_product):
     product.product_type.has_variants = True
 
     variant = product.variants.create(sku='test')
-    stock = variant.stock.create(quantity=0)
+    variant.quantity = 0
+    variant.save()
     status = get_variant_availability_status(variant)
     assert status == VariantAvailabilityStatus.OUT_OF_STOCK
 
-    stock.quantity = 5
-    stock.save()
+    variant.quantity = 5
+    variant.save()
     status = get_variant_availability_status(variant)
     assert status == VariantAvailabilityStatus.AVAILABLE
 

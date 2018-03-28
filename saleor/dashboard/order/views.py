@@ -11,7 +11,6 @@ from django.template.response import TemplateResponse
 from django.utils.translation import npgettext_lazy, pgettext_lazy
 from django_prices.templatetags import prices_i18n
 from payments import PaymentStatus
-from prices import Money, TaxedMoney
 
 from ...core.exceptions import InsufficientStock
 from ...core.utils import ZERO_TAXED_MONEY, get_paginator_items
@@ -19,14 +18,14 @@ from ...order import OrderStatus
 from ...order.emails import (
     send_fulfillment_confirmation, send_fulfillment_update)
 from ...order.models import (
-    Fulfillment, FulfillmentLine, Order, OrderLine, OrderNote)
+    Fulfillment, FulfillmentLine, Order, OrderNote)
 from ...order.utils import update_order_status
 from ..views import staff_member_required
 from .filters import OrderFilter
 from .forms import (
     AddressForm, AddVariantToOrderForm, BaseFulfillmentLineFormSet,
     CancelFulfillmentForm, CancelOrderForm, CancelOrderLineForm,
-    CapturePaymentForm, ChangeQuantityForm, ChangeStockForm, FulfillmentForm,
+    CapturePaymentForm, ChangeQuantityForm, FulfillmentForm,
     FulfillmentLineForm, FulfillmentTrackingNumberForm, OrderNoteForm,
     RefundPaymentForm, ReleasePaymentForm, RemoveVoucherForm)
 from .utils import (
@@ -360,25 +359,6 @@ def fulfillment_packing_slips(request, order_pk, fulfillment_pk):
     name = "packing-slip-%s" % (order.id,)
     response['Content-Disposition'] = 'filename=%s' % name
     return response
-
-
-@staff_member_required
-@permission_required('order.edit_order')
-def orderline_change_stock(request, order_pk, line_pk):
-    line = get_object_or_404(OrderLine, pk=line_pk)
-    status = 200
-    form = ChangeStockForm(request.POST or None, instance=line)
-    if form.is_valid():
-        form.save()
-        msg = pgettext_lazy(
-            'Dashboard message',
-            'Stock location changed for %s') % form.instance.product_sku
-        messages.success(request, msg)
-    elif form.errors:
-        status = 400
-    ctx = {'order_pk': order_pk, 'line_pk': line_pk, 'form': form}
-    template = 'dashboard/order/modal/order_line_stock.html'
-    return TemplateResponse(request, template, ctx, status=status)
 
 
 @staff_member_required

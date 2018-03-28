@@ -103,7 +103,7 @@ class ProductVariant(CountableDjangoObjectType):
         interfaces = [relay.Node]
 
     def resolve_stock_quantity(self, info):
-        return self.get_stock_quantity()
+        return self.quantity_available
 
 
 class ProductImage(CountableDjangoObjectType):

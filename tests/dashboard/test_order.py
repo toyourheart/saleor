@@ -1,4 +1,3 @@
-from decimal import Decimal
 from unittest.mock import patch
 
 import pytest
@@ -14,7 +13,7 @@ from saleor.order.models import Order, OrderHistoryEntry, OrderLine, OrderNote
 from saleor.order.utils import (
     add_variant_to_existing_lines, add_variant_to_order,
     change_order_line_quantity)
-from saleor.product.models import ProductVariant, Stock
+from saleor.product.models import ProductVariant
 
 
 @pytest.mark.integration
@@ -422,7 +421,8 @@ def test_view_cancel_order_line(admin_client, order_with_lines_and_stock):
     lines_after = Order.objects.get().lines.all()
     assert lines_before_count - 1 == lines_after.count()
     # check stock deallocation
-    assert Stock.objects.first().quantity_allocated == (
+    line.refresh_from_db()
+    assert line.quantity_allocated == (
         quantity_allocated_before - line_quantity)
     # check note in the order's history
     assert OrderHistoryEntry.objects.get(
@@ -468,7 +468,7 @@ def test_view_change_order_line_quantity(
     # order should have the same lines
     assert lines_before_quantity_change_count == lines_after.count()
     # stock allocation should be 2 now
-    assert Stock.objects.first().quantity_allocated == 2
+    assert line.quantity_allocated == 2
     line.refresh_from_db()
     # source line quantity should be decreased to 2
     assert line.quantity == 2
@@ -616,103 +616,9 @@ def test_view_fulfillment_packing_slips_without_shipping(
     assert response['content-type'] == 'application/pdf'
 
 
-@pytest.mark.integration
-@pytest.mark.django_db
-def test_view_change_order_line_stock_valid(
-        admin_client, order_with_lines_and_stock):
-    order = order_with_lines_and_stock
-    line = order.lines.last()
-    old_stock = line.stock
-    variant = ProductVariant.objects.get(sku=line.product_sku)
-    stock = Stock.objects.create(
-        variant=variant, cost_price=2, quantity=2, quantity_allocated=0)
-
-    url = reverse(
-        'dashboard:orderline-change-stock', kwargs={
-            'order_pk': order.pk,
-            'line_pk': line.pk})
-    data = {'stock': stock.pk}
-    response = admin_client.post(url, data)
-
-    assert response.status_code == 200
-
-    line.refresh_from_db()
-    assert line.stock == stock
-    assert line.stock.quantity_allocated == 2
-
-    old_stock.refresh_from_db()
-    assert old_stock.quantity_allocated == 0
-
-
-@pytest.mark.integration
-@pytest.mark.django_db
-def test_view_change_order_line_stock_insufficient_stock(
-        admin_client, order_with_lines_and_stock):
-    order = order_with_lines_and_stock
-    line = order.lines.last()
-    old_stock = line.stock
-    variant = ProductVariant.objects.get(sku=line.product_sku)
-    stock = Stock.objects.create(
-        variant=variant, cost_price=2, quantity=2, quantity_allocated=1)
-
-    url = reverse(
-        'dashboard:orderline-change-stock', kwargs={
-            'order_pk': order.pk,
-            'line_pk': line.pk})
-    data = {'stock': stock.pk}
-    response = admin_client.post(url, data)
-
-    assert response.status_code == 400
-
-    line.refresh_from_db()
-    assert line.stock == old_stock
-
-    old_stock.refresh_from_db()
-    assert old_stock.quantity_allocated == 2
-
-    stock.refresh_from_db()
-    assert stock.quantity_allocated == 1
-
-
-def test_view_change_order_line_stock_merges_lines(
-        admin_client, order_with_lines_and_stock):
-    order = order_with_lines_and_stock
-    line = order.lines.first()
-    old_stock = line.stock
-    variant = ProductVariant.objects.get(sku=line.product_sku)
-    stock = Stock.objects.create(
-        variant=variant, cost_price=2, quantity=2, quantity_allocated=2)
-    line_2 = order.lines.create(
-        product=line.product,
-        product_name=line.product.name,
-        product_sku='SKU_A',
-        is_shipping_required=line.is_shipping_required,
-        quantity=2,
-        unit_price_net=Decimal('30.00'),
-        unit_price_gross=Decimal('30.00'),
-        stock=stock)
-    lines_before = order.lines.count()
-
-    url = reverse(
-        'dashboard:orderline-change-stock', kwargs={
-            'order_pk': order.pk,
-            'line_pk': line_2.pk})
-    data = {'stock': old_stock.pk}
-    response = admin_client.post(url, data)
-
-    assert response.status_code == 200
-    assert order.lines.count() == lines_before - 1
-
-    old_stock.refresh_from_db()
-    assert old_stock.quantity_allocated == 5
-
-    stock.refresh_from_db()
-    assert stock.quantity_allocated == 0
-
-
 def test_add_variant_to_existing_lines_one_line(
-        order_with_variant_from_different_stocks):
-    order = order_with_variant_from_different_stocks
+        order_with_lines_and_stock):
+    order = order_with_lines_and_stock
     lines = order.lines.filter(product_sku='SKU_A')
     variant_lines_before = lines.count()
     line = lines.first()
@@ -728,8 +634,8 @@ def test_add_variant_to_existing_lines_one_line(
 
 
 def test_add_variant_to_existing_lines_multiple_lines(
-        order_with_variant_from_different_stocks):
-    order = order_with_variant_from_different_stocks
+        order_with_lines_and_stock):
+    order = order_with_lines_and_stock
     lines = order.lines.filter(product_sku='SKU_A').all()
     variant_lines_before = lines.count()
     line_1 = lines[0]
@@ -748,8 +654,8 @@ def test_add_variant_to_existing_lines_multiple_lines(
 
 
 def test_add_variant_to_existing_lines_multiple_lines_with_rest(
-        order_with_variant_from_different_stocks):
-    order = order_with_variant_from_different_stocks
+        order_with_lines_and_stock):
+    order = order_with_lines_and_stock
     lines = order.lines.filter(product_sku='SKU_A').all()
     variant_lines_before = lines.count()
     line_1 = lines[0]
@@ -768,8 +674,8 @@ def test_add_variant_to_existing_lines_multiple_lines_with_rest(
 
 
 def test_view_add_variant_to_order(
-        admin_client, order_with_variant_from_different_stocks):
-    order = order_with_variant_from_different_stocks
+        admin_client, order_with_lines_and_stock):
+    order = order_with_lines_and_stock
     variant = ProductVariant.objects.get(sku='SKU_A')
     line = OrderLine.objects.get(product_sku='SKU_A')
     url = reverse(

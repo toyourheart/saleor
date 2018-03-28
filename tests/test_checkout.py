@@ -1,7 +1,6 @@
-from unittest.mock import MagicMock, Mock
+from unittest.mock import Mock
 
 import pytest
-from django.conf import settings
 from django.contrib.auth.models import AnonymousUser
 from django.urls import reverse
 from prices import Money, TaxedMoney

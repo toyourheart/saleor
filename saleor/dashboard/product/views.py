@@ -13,7 +13,7 @@ from . import forms
 from ...core.utils import get_paginator_items
 from ...product.models import (
     AttributeChoiceValue, Product, ProductAttribute, ProductImage, ProductType,
-    ProductVariant, Stock)
+    ProductVariant)
 from ...product.utils import (
     get_availability, get_product_costs_data, get_variant_costs_data)
 from ..views import staff_member_required
@@ -192,13 +192,12 @@ def product_detail(request, pk):
     # management.
     no_variants = not product.product_type.has_variants
     only_variant = variants.first() if no_variants else None
-    stock = only_variant.stock.all() if only_variant else Stock.objects.none()
     ctx = {
         'product': product, 'sale_price': sale_price, 'variants': variants,
         'gross_price_range': gross_price_range, 'images': images,
         'no_variants': no_variants, 'only_variant': only_variant,
-        'stock': stock, 'purchase_cost': purchase_cost,
-        'gross_margin': gross_margin, 'is_empty': not variants.exists()}
+        'purchase_cost': purchase_cost, 'gross_margin': gross_margin,
+        'is_empty': not variants.exists()}
     return TemplateResponse(request, 'dashboard/product/detail.html', ctx)
 
 
@@ -258,79 +257,6 @@ def product_delete(request, pk):
         request,
         'dashboard/product/modal/confirm_delete.html',
         {'product': product})
-
-
-@staff_member_required
-@permission_required('product.view_stock')
-def stock_details(request, product_pk, variant_pk, stock_pk):
-    product = get_object_or_404(Product, pk=product_pk)
-    variant = get_object_or_404(product.variants, pk=variant_pk)
-    stock = get_object_or_404(variant.stock, pk=stock_pk)
-    ctx = {'stock': stock, 'product': product, 'variant': variant}
-    return TemplateResponse(
-        request,
-        'dashboard/product/stock/detail.html',
-        ctx)
-
-
-@staff_member_required
-@permission_required('product.edit_stock')
-def stock_add(request, product_pk, variant_pk):
-    product = get_object_or_404(Product, pk=product_pk)
-    variant = get_object_or_404(product.variants, pk=variant_pk)
-    stock = Stock()
-    form = forms.StockForm(
-        request.POST or None, instance=stock, variant=variant)
-    if form.is_valid():
-        form.save()
-        msg = pgettext_lazy('Dashboard message', 'Saved stock')
-        messages.success(request, msg)
-        return redirect(
-            'dashboard:variant-details', product_pk=product.pk,
-            variant_pk=variant.pk)
-    ctx = {
-        'form': form, 'product': product, 'variant': variant, 'stock': stock}
-    return TemplateResponse(request, 'dashboard/product/stock/form.html', ctx)
-
-
-@staff_member_required
-@permission_required('product.edit_stock')
-def stock_edit(request, product_pk, variant_pk, stock_pk):
-    product = get_object_or_404(Product, pk=product_pk)
-    variant = get_object_or_404(product.variants, pk=variant_pk)
-    stock = get_object_or_404(variant.stock, pk=stock_pk)
-    form = forms.StockForm(
-        request.POST or None, instance=stock, variant=variant)
-    if form.is_valid():
-        form.save()
-        msg = pgettext_lazy('Dashboard message', 'Saved stock')
-        messages.success(request, msg)
-        return redirect(
-            'dashboard:variant-details', product_pk=product.pk,
-            variant_pk=variant.pk)
-    ctx = {
-        'form': form, 'product': product, 'variant': variant, 'stock': stock}
-    return TemplateResponse(request, 'dashboard/product/stock/form.html', ctx)
-
-
-@staff_member_required
-@permission_required('product.edit_stock')
-def stock_delete(request, product_pk, variant_pk, stock_pk):
-    product = get_object_or_404(Product, pk=product_pk)
-    variant = get_object_or_404(product.variants, pk=variant_pk)
-    stock = get_object_or_404(Stock, pk=stock_pk)
-    if request.method == 'POST':
-        stock.delete()
-        msg = pgettext_lazy('Dashboard message', 'Removed stock')
-        messages.success(request, msg)
-        return redirect(
-            'dashboard:variant-details', product_pk=product.pk,
-            variant_pk=variant.pk)
-    ctx = {'product': product, 'stock': stock, 'variant': variant}
-    return TemplateResponse(
-        request,
-        'dashboard/product/stock/modal/confirm_delete.html',
-        ctx)
 
 
 @staff_member_required
