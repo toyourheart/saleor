@@ -21,7 +21,6 @@ from ...order.emails import (
 from ...order.models import (
     Fulfillment, FulfillmentLine, Order, OrderLine, OrderNote)
 from ...order.utils import update_order_status
-from ...product.models import StockLocation
 from ..views import staff_member_required
 from .filters import OrderFilter
 from .forms import (
@@ -72,12 +71,10 @@ def order_details(request, order_pk):
             balance = captured - order.total
     else:
         can_capture = can_release = can_refund = False
-    is_many_stock_locations = StockLocation.objects.count() > 1
     ctx = {'order': order, 'all_payments': all_payments, 'payment': payment,
            'notes': notes, 'captured': captured, 'balance': balance,
            'preauthorized': preauthorized, 'can_capture': can_capture,
-           'can_release': can_release, 'can_refund': can_refund,
-           'is_many_stock_locations': is_many_stock_locations}
+           'can_release': can_release, 'can_refund': can_refund}
     return TemplateResponse(request, 'dashboard/order/detail.html', ctx)
 
 

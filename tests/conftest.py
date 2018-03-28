@@ -26,7 +26,7 @@ from saleor.order.utils import recalculate_order
 from saleor.page.models import Page
 from saleor.product.models import (
     AttributeChoiceValue, Category, Collection, Product, ProductAttribute,
-    ProductImage, ProductType, ProductVariant, Stock, StockLocation)
+    ProductImage, ProductType, ProductVariant, Stock)
 from saleor.shipping.models import ShippingMethod
 from saleor.site.models import AuthorizationKey, SiteSettings
 
@@ -168,11 +168,6 @@ def default_category(db):  # pylint: disable=W0613
 
 
 @pytest.fixture
-def default_stock_location(db):
-    return StockLocation.objects.create(name='Warehouse 1')
-
-
-@pytest.fixture
 def staff_group():
     return Group.objects.create(name='test')
 
@@ -198,13 +193,13 @@ def permission_edit_category():
 
 
 @pytest.fixture
-def permission_view_stock_location():
-    return Permission.objects.get(codename='view_stock_location')
+def permission_view_stock():
+    return Permission.objects.get(codename='view_stock')
 
 
 @pytest.fixture
-def permission_edit_stock_location():
-    return Permission.objects.get(codename='edit_stock_location')
+def permission_edit_stock():
+    return Permission.objects.get(codename='edit_stock')
 
 
 @pytest.fixture
@@ -263,19 +258,8 @@ def product(product_type, default_category):
         smart_text(variant_attr.pk): smart_text(variant_attr_value.pk)}
 
     variant = ProductVariant.objects.create(
-        product=product, sku='123', attributes=variant_attributes)
-    warehouse_1 = StockLocation.objects.create(name='Warehouse 1')
-    warehouse_2 = StockLocation.objects.create(name='Warehouse 2')
-    warehouse_3 = StockLocation.objects.create(name='Warehouse 3')
-    Stock.objects.create(
-        variant=variant, cost_price=Money('1.00', 'USD'), quantity=5,
-        quantity_allocated=5, location=warehouse_1)
-    Stock.objects.create(
-        variant=variant, cost_price=Money('100.00', 'USD'), quantity=5,
-        quantity_allocated=5, location=warehouse_2)
-    Stock.objects.create(
-        variant=variant, cost_price=Money('10.00', 'USD'), quantity=5,
-        quantity_allocated=0, location=warehouse_3)
+        product=product, sku='123', attributes=variant_attributes,
+        cost_price=Money('1.00', 'USD'), quantity=5, quantity_allocated=5)
     return product
 
 
@@ -326,12 +310,6 @@ def order_list(admin_user, billing_address):
     order2 = Order.objects.create(**data)
 
     return [order, order1, order2]
-
-
-@pytest.fixture
-def stock_location():
-    warehouse_1 = StockLocation.objects.create(name='Warehouse 1')
-    return warehouse_1
 
 
 @pytest.fixture
@@ -438,10 +416,9 @@ def order_with_lines_and_stock(order, product_type, default_category):
         name='Test product', price=Money('10.00', 'USD'),
         product_type=product_type, category=default_category)
     variant = ProductVariant.objects.create(product=product, sku='SKU_A')
-    warehouse = StockLocation.objects.create(name='Warehouse 1')
     stock = Stock.objects.create(
         variant=variant, cost_price=Money(1, 'USD'), quantity=5,
-        quantity_allocated=3, location=warehouse)
+        quantity_allocated=3)
     order.lines.create(
         order=order,
         product=product,
@@ -451,15 +428,14 @@ def order_with_lines_and_stock(order, product_type, default_category):
         quantity=3,
         unit_price_net=Decimal('30.00'),
         unit_price_gross=Decimal('30.00'),
-        stock=stock,
-        stock_location=stock.location.name)
+        stock=stock)
     product = Product.objects.create(
         name='Test product 2', price=Money('20.00', 'USD'),
         product_type=product_type, category=default_category)
     variant = ProductVariant.objects.create(product=product, sku='SKU_B')
     stock = Stock.objects.create(
         variant=variant, cost_price=Money(2, 'USD'), quantity=2,
-        quantity_allocated=2, location=warehouse)
+        quantity_allocated=2)
     order.lines.create(
         order=order,
         product=product,
@@ -469,8 +445,7 @@ def order_with_lines_and_stock(order, product_type, default_category):
         quantity=2,
         unit_price_net=Decimal('20.00'),
         unit_price_gross=Decimal('20.00'),
-        stock=stock,
-        stock_location=stock.location.name)
+        stock=stock)
     recalculate_order(order)
     order.refresh_from_db()
     return order
@@ -495,10 +470,9 @@ def fulfilled_order(order_with_lines_and_stock):
 def order_with_variant_from_different_stocks(order_with_lines_and_stock):
     line = OrderLine.objects.get(product_sku='SKU_A')
     variant = ProductVariant.objects.get(sku=line.product_sku)
-    warehouse_2 = StockLocation.objects.create(name='Warehouse 2')
     stock = Stock.objects.create(
         variant=variant, cost_price=Money(1, 'USD'), quantity=5,
-        quantity_allocated=2, location=warehouse_2)
+        quantity_allocated=2)
     order_with_lines_and_stock.lines.create(
         order=order,
         product=variant.product,
@@ -508,12 +482,10 @@ def order_with_variant_from_different_stocks(order_with_lines_and_stock):
         quantity=2,
         unit_price_net=Decimal('30.00'),
         unit_price_gross=Decimal('30.00'),
-        stock=stock,
-        stock_location=stock.location.name)
-    warehouse_2 = StockLocation.objects.create(name='Warehouse 3')
+        stock=stock)
     Stock.objects.create(
         variant=variant, cost_price=Money(1, 'USD'), quantity=5,
-        quantity_allocated=0, location=warehouse_2)
+        quantity_allocated=0)
     return order_with_lines_and_stock
 
 

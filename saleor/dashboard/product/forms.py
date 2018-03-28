@@ -12,8 +12,7 @@ from mptt.forms import TreeNodeChoiceField
 from ...core.utils.text import generate_seo_description
 from ...product.models import (
     AttributeChoiceValue, Category, Collection, Product, ProductAttribute,
-    ProductImage, ProductType, ProductVariant, Stock, StockLocation,
-    VariantImage)
+    ProductImage, ProductType, ProductVariant, Stock, VariantImage)
 from ...product.thumbnails import create_product_thumbnails
 from ..forms import OrderedModelMultipleChoiceField, ModelChoiceOrCreationField
 from ..widgets import RichTextEditorWidget
