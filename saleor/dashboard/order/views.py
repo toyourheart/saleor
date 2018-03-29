@@ -70,11 +70,12 @@ def order_details(request, order_pk):
     else:
         can_capture = can_release = can_refund = False
     events = order.history.select_related('user')
+    fulfillments = order.fulfillments.prefetch_related('lines')
     ctx = {'order': order, 'all_payments': all_payments, 'payment': payment,
            'notes': notes, 'captured': captured, 'balance': balance,
            'preauthorized': preauthorized, 'can_capture': can_capture,
            'can_release': can_release, 'can_refund': can_refund,
-           'events': events}
+           'events': events, 'order_fulfillments': fulfillments}
     return TemplateResponse(request, 'dashboard/order/detail.html', ctx)
 
 
