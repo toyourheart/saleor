@@ -266,7 +266,6 @@ def get_product_costs_data(product):
 
     variants = product.variants.all()
     costs_data = get_cost_data_from_variants(variants)
-
     if costs_data.costs:
         purchase_costs_range = TaxedMoneyRange(
             min(costs_data.costs), max(costs_data.costs))
