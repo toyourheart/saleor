@@ -35,8 +35,10 @@ def superuser_required(
 def index(request):
     paginate_by = 10
     statuses = {OrderStatus.UNFULFILLED, OrderStatus.PARTIALLY_FULFILLED}
-    orders_to_ship = Order.objects.filter(status__in=statuses).select_related(
-        'user').prefetch_related('lines', 'payments')
+    orders_to_ship = Order.objects.filter(
+        status__in=statuses, payments__status=PaymentStatus.CONFIRMED)
+    orders_to_ship = orders_to_ship.select_related('user')
+    orders_to_ship = orders_to_ship.prefetch_related('lines', 'payments')
     orders_to_ship = [
         order for order in orders_to_ship if order.is_fully_paid()]
     payments = Payment.objects.filter(
