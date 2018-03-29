@@ -52,7 +52,7 @@ def order_details(request, order_pk):
         'user', 'shipping_address', 'billing_address').prefetch_related(
         'notes', 'payments', 'history', 'lines')
     order = get_object_or_404(qs, pk=order_pk)
-    notes = order.notes.all()
+    notes = order.notes.select_related('user')
     all_payments = order.payments.exclude(status=PaymentStatus.INPUT)
     payment = order.payments.last()
     captured = preauthorized = ZERO_TAXED_MONEY
@@ -69,10 +69,12 @@ def order_details(request, order_pk):
             balance = captured - order.total
     else:
         can_capture = can_release = can_refund = False
+    events = order.history.select_related('user')
     ctx = {'order': order, 'all_payments': all_payments, 'payment': payment,
            'notes': notes, 'captured': captured, 'balance': balance,
            'preauthorized': preauthorized, 'can_capture': can_capture,
-           'can_release': can_release, 'can_refund': can_refund}
+           'can_release': can_release, 'can_refund': can_refund,
+           'events': events}
     return TemplateResponse(request, 'dashboard/order/detail.html', ctx)
 
 
