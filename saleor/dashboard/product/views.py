@@ -177,7 +177,7 @@ def product_create(request, type_pk):
 @permission_required('product.view_product')
 def product_detail(request, pk):
     products = Product.objects.prefetch_related(
-        'variants__stock', 'images',
+        'variants', 'images',
         'product_type__variant_attributes__values').all()
     product = get_object_or_404(products, pk=pk)
     variants = product.variants.all()
@@ -377,7 +377,6 @@ def variant_edit(request, product_pk, variant_pk):
 def variant_details(request, product_pk, variant_pk):
     product = get_object_or_404(Product, pk=product_pk)
     qs = product.variants.prefetch_related(
-        'stock__location',
         'product__product_type__variant_attributes__values')
     variant = get_object_or_404(qs, pk=variant_pk)
 
@@ -387,7 +386,6 @@ def variant_details(request, product_pk, variant_pk):
     if not product.product_type.has_variants:
         return redirect('dashboard:product-detail', pk=product.pk)
 
-    stock = variant.stock.all()
     images = variant.images.all()
     costs_data = get_variant_costs_data(variant)
     if costs_data.costs:
@@ -398,9 +396,8 @@ def variant_details(request, product_pk, variant_pk):
         costs = {}
 
     ctx = {
-        'images': images, 'product': product, 'stock': stock,
-        'variant': variant, 'costs': costs, 'margins': costs_data.margins,
-        'is_empty': not stock.exists()}
+        'images': images, 'product': product,
+        'variant': variant, 'costs': costs, 'margins': costs_data.margins}
     return TemplateResponse(
         request,
         'dashboard/product/product_variant/detail.html',

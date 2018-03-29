@@ -1,17 +1,12 @@
 import datetime
-import io
 import json
-from contextlib import redirect_stdout
 from unittest.mock import Mock, patch
 
 import pytest
 
-from django.conf import settings
 from django.urls import reverse
-from django.utils.encoding import smart_text
 from saleor.cart import CartStatus, utils
 from saleor.cart.models import Cart
-from saleor.core.utils import create_thumbnails
 from saleor.product import (
     ProductAvailabilityStatus, VariantAvailabilityStatus, models)
 from saleor.product.models import Category, ProductImage
@@ -39,7 +34,7 @@ def product_with_no_attributes(product_type, default_category):
         (increase_stock, 150, 80),
         (decrease_stock, 50, 30),
         (deallocate_stock, 100, 30),
-        (allocate_stock, 10, 1)))
+        (allocate_stock, 100, 130)))
 def test_stock_utils(
         product, func, expected_quanitty, expected_quant_allocated):
     variant = product.variants.first()

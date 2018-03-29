@@ -20,7 +20,7 @@ from saleor.checkout.core import Checkout
 from saleor.dashboard.order.utils import fulfill_order_line
 from saleor.discount.models import Sale, Voucher
 from saleor.order import OrderStatus
-from saleor.order.models import Order, OrderLine
+from saleor.order.models import Order
 from saleor.menu.models import Menu, MenuItem
 from saleor.order.utils import recalculate_order
 from saleor.page.models import Page
@@ -259,7 +259,7 @@ def product(product_type, default_category):
 
     variant = ProductVariant.objects.create(
         product=product, sku='123', attributes=variant_attributes,
-        cost_price=Money('1.00', 'USD'), quantity=5, quantity_allocated=5)
+        cost_price=Money('1.00', 'USD'), quantity=10, quantity_allocated=1)
     return product
 
 
