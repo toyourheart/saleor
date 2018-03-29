@@ -50,21 +50,6 @@ class ProductTypeSelectorForm(forms.Form):
         widget=forms.RadioSelect, empty_label=None)
 
 
-class StockForm(forms.ModelForm):
-    class Meta:
-        model = ProductVariant
-        exclude = ['quantity_allocated']
-        labels = {
-            'quantity': pgettext_lazy(
-                'Integer number', 'Quantity'),
-            'cost_price': pgettext_lazy(
-                'Currency amount', 'Cost price')}
-
-    def __init__(self, *args, **kwargs):
-        self.variant = kwargs.pop('variant')
-        super().__init__(*args, **kwargs)
-
-
 class ProductTypeForm(forms.ModelForm):
     class Meta:
         model = ProductType
@@ -231,12 +216,14 @@ class ProductVariantForm(forms.ModelForm, AttributesMixin):
 
     class Meta:
         model = ProductVariant
-        exclude = ['attributes', 'product', 'images']
+        exclude = ['attributes', 'product', 'images', 'quantity_allocated']
         labels = {
             'sku': pgettext_lazy('SKU', 'SKU'),
             'price_override': pgettext_lazy(
                 'Override price', 'Override price'),
-            'name': pgettext_lazy('Product variant name', 'Name')}
+            'name': pgettext_lazy('Product variant name', 'Name'),
+            'quantity': pgettext_lazy('Integer number', 'Quantity'),
+            'cost_price': pgettext_lazy('Currency amount', 'Cost price')}
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
