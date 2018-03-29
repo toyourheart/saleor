@@ -50,7 +50,7 @@ def order_list(request):
 def order_details(request, order_pk):
     qs = Order.objects.select_related(
         'user', 'shipping_address', 'billing_address').prefetch_related(
-        'notes', 'payments', 'history', 'lines')
+        'notes', 'payments', 'history', 'lines__variant__product')
     order = get_object_or_404(qs, pk=order_pk)
     notes = order.notes.select_related('user')
     all_payments = order.payments.exclude(status=PaymentStatus.INPUT)
