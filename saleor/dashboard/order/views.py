@@ -17,8 +17,7 @@ from ...core.utils import ZERO_TAXED_MONEY, get_paginator_items
 from ...order import OrderStatus
 from ...order.emails import (
     send_fulfillment_confirmation, send_fulfillment_update)
-from ...order.models import (
-    Fulfillment, FulfillmentLine, Order, OrderNote)
+from ...order.models import Fulfillment, FulfillmentLine, Order, OrderNote
 from ...order.utils import update_order_status
 from ..views import staff_member_required
 from .filters import OrderFilter

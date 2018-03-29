@@ -296,11 +296,10 @@ def get_cost_data_from_variants(variants):
 def get_variant_costs_data(variant):
     costs = []
     margins = []
-    for stock in variant.stock.all():
-        costs.append(get_cost_price(stock))
-        margin = get_margin_for_variant(stock)
-        if margin:
-            margins.append(margin)
+    costs.append(get_cost_price(variant))
+    margin = get_margin_for_variant(variant)
+    if margin:
+        margins.append(margin)
     return CostsData(costs, margins)
 
 
@@ -311,12 +310,11 @@ def get_cost_price(variant):
 
 
 def get_margin_for_variant(variant):
-    # TODO
-    stock_price = variant.get_total()
-    if stock_price is None:
+    variant_cost = variant.get_total()
+    if variant_cost is None:
         return None
-    price = stock.variant.get_price_per_item()
-    margin = price - stock_price
+    price = variant.get_price_per_item()
+    margin = price - variant_cost
     percent = round((margin.gross / price.gross) * 100, 0)
     return percent
 

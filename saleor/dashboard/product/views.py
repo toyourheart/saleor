@@ -17,8 +17,7 @@ from ...product.models import (
 from ...product.utils import (
     get_availability, get_product_costs_data, get_variant_costs_data)
 from ..views import staff_member_required
-from .filters import (
-    ProductAttributeFilter, ProductFilter, ProductTypeFilter)
+from .filters import ProductAttributeFilter, ProductFilter, ProductTypeFilter
 
 
 @staff_member_required
