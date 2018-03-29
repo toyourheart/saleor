@@ -247,7 +247,7 @@ def product(product_type, default_category):
     variant_attributes = {
         smart_text(variant_attr.pk): smart_text(variant_attr_value.pk)}
 
-    variant = ProductVariant.objects.create(
+    ProductVariant.objects.create(
         product=product, sku='123', attributes=variant_attributes,
         cost_price=Money('1.00', 'USD'), quantity=10, quantity_allocated=1)
     return product
@@ -362,33 +362,36 @@ def order_with_lines(order, product_type, default_category):
     product = Product.objects.create(
         name='Test product', price=Money('10.00', 'USD'),
         product_type=product_type, category=default_category)
-
+    variant = ProductVariant.objects.create(
+        product=product, sku='SKU_A', cost_price=Money(1, 'USD'), quantity=0,
+        quantity_allocated=0)
     order.lines.create(
-        product=product,
         product_name=product.name,
         product_sku='SKU_%d' % (product.pk,),
         is_shipping_required=product.product_type.is_shipping_required,
         quantity=1,
         unit_price_net=Decimal('10.00'),
-        unit_price_gross=Decimal('10.00'))
+        unit_price_gross=Decimal('10.00'),
+        variant=variant)
     product = Product.objects.create(
         name='Test product 2', price=Money('20.00', 'USD'),
         product_type=product_type, category=default_category)
-
+    variant = ProductVariant.objects.create(
+        product=product, sku='SKU_B', cost_price=Money(2, 'USD'), quantity=0,
+        quantity_allocated=0)
     order.lines.create(
-        product=product,
         product_name=product.name,
         product_sku='SKU_%d' % (product.pk,),
         is_shipping_required=product.product_type.is_shipping_required,
         quantity=1,
         unit_price_net=Decimal('20.00'),
-        unit_price_gross=Decimal('20.00'))
+        unit_price_gross=Decimal('20.00'),
+        variant=variant)
     product = Product.objects.create(
         name='Test product 3', price=Money('30.00', 'USD'),
         product_type=product_type, category=default_category)
 
     order.lines.create(
-        product=product,
         product_name=product.name,
         product_sku='SKU_%d' % (product.pk,),
         is_shipping_required=product.product_type.is_shipping_required,
@@ -410,7 +413,6 @@ def order_with_lines_and_stock(order, product_type, default_category):
         quantity_allocated=3)
     order.lines.create(
         order=order,
-        product=product,
         product_name=product.name,
         product_sku='SKU_A',
         is_shipping_required=product.product_type.is_shipping_required,
@@ -426,7 +428,6 @@ def order_with_lines_and_stock(order, product_type, default_category):
         quantity_allocated=2)
     order.lines.create(
         order=order,
-        product=product,
         product_name=product.name,
         product_sku='SKU_B',
         is_shipping_required=product.product_type.is_shipping_required,

@@ -63,7 +63,7 @@ def test_add_variant_to_order_edits_line_for_existing_variant(
         order_with_lines_and_stock):
     order = order_with_lines_and_stock
     existing_line = order.lines.first()
-    variant = existing_line.product.variants.get()
+    variant = existing_line.variant
     lines_before = order.lines.count()
     line_quantity_before = existing_line.quantity
 
@@ -79,7 +79,6 @@ def test_add_variant_to_order_allocates_stock_for_existing_variant(
         order_with_lines_and_stock):
     order = order_with_lines_and_stock
     existing_line = order.lines.first()
-    variant = existing_line.product.variants.get()
     variant = existing_line.variant
     stock_before = variant.quantity_allocated
 

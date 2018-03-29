@@ -404,7 +404,7 @@ def test_view_cancel_order_line(admin_client, order_with_lines_and_stock):
     line = lines_before.first()
     line_quantity = line.quantity
     quantity_allocated_before = line.variant.quantity_allocated
-    product = line.product
+    product = line.variant.product
 
     url = reverse(
         'dashboard:orderline-cancel', kwargs={
@@ -475,9 +475,9 @@ def test_view_change_order_line_quantity(
     # a note in the order's history should be created
     assert OrderHistoryEntry.objects.get(
         order=order_with_lines_and_stock).content == (
-            'Changed quantity for product %(product)s from'
+            'Changed quantity for variant %(variant)s from'
             ' %(old_quantity)s to %(new_quantity)s') % {
-                'product': line.product,
+                'variant': line.variant,
                 'old_quantity': line_quantity_before_quantity_change,
                 'new_quantity': 2}
 
